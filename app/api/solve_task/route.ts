@@ -377,6 +377,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
-// FIX A — Named exports for cron to import directly (ZERO nested HTTP)
-export { processLink, saveResultToFirestore };
