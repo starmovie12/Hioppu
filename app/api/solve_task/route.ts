@@ -126,8 +126,8 @@ export async function processLink(
     // review-tech, ngwin, cryptoinsights → VPS port 10000 SEQUENTIAL
     // gadgetsweb → native solve
     let loopCount = 0;
-    while (loopCount < 3 && !TARGET_DOMAINS.some(d => currentLink.includes(d))) {
-      if (!TIMER_DOMAINS.some(d => currentLink.includes(d)) && loopCount === 0) break;
+    while (loopCount < 3 && !TARGET_DOMAINS.some((d: string) => currentLink.includes(d))) {
+      if (!TIMER_DOMAINS.some((d: string) => currentLink.includes(d)) && loopCount === 0) break;
 
       if (currentLink.includes('gadgetsweb')) {
         logs.push({ msg: `🔁 GadgetsWeb native solve (loop ${loopCount + 1})`, type: 'info' });
@@ -300,8 +300,8 @@ export async function POST(req: NextRequest) {
     // ─── Step 3: Smart Routing ───────────────────────────────────────────────
     // Timer links (gadgetsweb, review-tech, ngwin, cryptoinsights) → SEQUENTIAL
     // Direct links (hblinks, hubdrive, hubcdn, hubcloud, gdflix, drivehub) → PARALLEL
-    const timerLinks  = pendingLinks.filter((l: any) => TIMER_DOMAINS.some(d => l.link?.includes(d)));
-    const directLinks = pendingLinks.filter((l: any) => !TIMER_DOMAINS.some(d => l.link?.includes(d)));
+    const timerLinks  = pendingLinks.filter((l: any) => TIMER_DOMAINS.some((d: string) => l.link?.includes(d)));
+    const directLinks = pendingLinks.filter((l: any) => !TIMER_DOMAINS.some((d: string) => l.link?.includes(d)));
 
     const TIME_BUDGET_MS = 45_000; // FIX C: 45s hard cap — 15s buffer before Vercel 60s kill
 
@@ -377,6 +377,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
-// FIX A — Named exports for cron to import directly (ZERO nested HTTP)
-export { processLink, saveResultToFirestore };
