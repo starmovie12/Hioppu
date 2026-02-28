@@ -263,29 +263,48 @@ export async function GET(req: NextRequest) {
       timerPromise,
     ]);
 
-    // TRAP 7 FIX: Count successes from BOTH arrays correctly — timer results were previously IGNORED
-    const directDone = directSettled.filter(r => r.status === 'fulfilled' && (r.value as any)?.status === 'done').length;
-    const timerDone  = (timerResults as any[]).filter(r => r?.status === 'done' || r?.status === 'success').length;
-    const doneCount  = directDone + timerDone;
+    // Count successes from BOTH arrays correctly
+    const directDone   = directSettled.filter(r => r.status === 'fulfilled' && (r.value as any)?.status === 'done').length;
+    const directErrors = directSettled.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as any)?.status === 'error')).length;
+    const timerDone    = (timerResults as any[]).filter(r => r?.status === 'done' || r?.status === 'success').length;
+    const timerErrors  = (timerResults as any[]).filter(r => r?.status === 'error' || r?.status === 'failed').length;
+    const doneCount    = directDone + timerDone;
+    const errorCount   = directErrors + timerErrors;
 
-    // Step 8: Queue item status update (FIX A + v5 TRAP 6 FIX)
-    // v5 TRAP 6 FIX: hasDeferredLinks → queue 'pending' + unlock for next cron run
+    // ✅ FIX 1: Queue item completion — STRICT 100% success required
+    // Only 'completed' when EVERY link resolved successfully
+    // Any error/failure → 'failed' so cron retry logic picks it up
+    // hasDeferredLinks → 'pending' so next cron run resumes remaining links
+    const allLinksSucceeded = !hasDeferredLinks && errorCount === 0 && doneCount === pendingLinks.length;
+
+    // Step 8: Queue item status update
     if (hasDeferredLinks) {
       await db.collection(queueCollection).doc(item.id).update({
-        status:           'pending',   // Re-queue — next cron will resume
+        status:           'pending',   // Re-queue — next cron will resume deferred links
         lockedAt:         null,        // Unlock
         taskId,
         extractedBy:      'Server/Auto-Pilot',
         retryCount:       item.retryCount || 0,
         lastPartialRunAt: new Date().toISOString(),
       });
-    } else {
+    } else if (allLinksSucceeded) {
+      // ✅ 100% success — mark completed
       await db.collection(queueCollection).doc(item.id).update({
-        status:      doneCount > 0 ? 'completed' : 'failed',
+        status:      'completed',
         processedAt: new Date().toISOString(),
         taskId,
         extractedBy: 'Server/Auto-Pilot',
         retryCount:  item.retryCount || 0,
+      });
+    } else {
+      // ❌ Some links failed — mark 'failed' so cron retry logic can pick it up
+      await db.collection(queueCollection).doc(item.id).update({
+        status:      'failed',
+        processedAt: new Date().toISOString(),
+        taskId,
+        extractedBy: 'Server/Auto-Pilot',
+        retryCount:  item.retryCount || 0,
+        lastError:   `${errorCount} link(s) failed out of ${pendingLinks.length}`,
       });
     }
 
@@ -299,7 +318,7 @@ export async function GET(req: NextRequest) {
 
     if (hasDeferredLinks) {
       await sendTelegram(
-        `⏳ Auto-Pilot Partial 🤖\n🎬 ${title}\n⏱ ${elapsed}s\n🔗 Deferred links pending — next run will resume\n🔄 Retry: ${retry}/${MAX_CRON_RETRIES}`,
+        `⏳ Auto-Pilot Partial 🤖\n🎬 ${title}\n⏱ ${elapsed}s\n🔗 Deferred links pending\n🔄 Retry: ${retry}/${MAX_CRON_RETRIES}`,
       );
     } else if (doneCount > 0) {
       await sendTelegram(
@@ -320,7 +339,7 @@ export async function GET(req: NextRequest) {
       elapsed,
     });
   } catch (err: any) {
-    // Return 200 — GitHub Actions 500 causes job failure + unnecessary retries
+    // Heartbeat update on error
     await updateHeartbeat('error', err.message);
     await sendTelegram(`🚨 Cron Error\n${err.message}`);
     return NextResponse.json({ status: 'error', error: err.message });
