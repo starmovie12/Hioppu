@@ -98,6 +98,7 @@ export async function saveResultToFirestore(
 
 // ─── HELPER 3: processLink ────────────────────────────────────────────────────
 // FIX D: lid param is always l.id — never indexOf
+// attempt = 1 → auto-retry on fail (attempt 2 called automatically)
 export async function processLink(
   linkData: any,
   lid: number | string,
@@ -221,9 +222,11 @@ export async function processLink(
     result = { status: 'error', error: err.message, logs };
   }
 
-  // ─── Auto-Retry: HATA DIYA GAYA (Vercel Timeout rokne ke liye) ───────────────
-  // Is block ko delete/comment kar diya gaya hai. Ab code fail hone par wapas 
-  // 20 second waste nahi karega, balki seedha aage badh jayega.
+  // ─── Auto-Retry: attempt 1 fail → attempt 2 automatically ────────────────────
+  if (result.status === 'error' && attempt === 1) {
+    logs.push({ msg: '🔄 Auto-retrying (attempt 2/2)...', type: 'warn' });
+    return processLink(linkData, lid, taskId, extractedBy, 2);
+  }
 
   // ─── Save to Firestore (atomic transaction on master doc) ───────────────────
   await saveResultToFirestore(taskId, lid, originalUrl, { ...result, logs }, extractedBy);
@@ -300,7 +303,7 @@ export async function POST(req: NextRequest) {
     const timerLinks  = pendingLinks.filter((l: any) => TIMER_DOMAINS.some(d => l.link?.includes(d)));
     const directLinks = pendingLinks.filter((l: any) => !TIMER_DOMAINS.some(d => l.link?.includes(d)));
 
-    const TIME_BUDGET_MS = 50_000; // FIX C: 50s hard cap per user demand — 10s buffer before Vercel 60s kill
+    const TIME_BUDGET_MS = 45_000; // FIX C: 45s hard cap — 15s buffer before Vercel 60s kill
 
     // Direct links — PARALLEL (Promise.allSettled)
     // FIX D: l.id, not indexOf
@@ -374,3 +377,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+// FIX A — Named exports for cron to import directly (ZERO nested HTTP)
+export { processLink, saveResultToFirestore };
