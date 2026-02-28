@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Run
         run: |
-          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://hioppu-obbo.vercel.app/api/cron/process-queue" || true
+          curl -sf -H "Authorization: Bearer MflixProSecret123" "https://hioppu-obbo.vercel.app/api/cron/process-queue" || true
 
   t1:
     name: 'Queue Run (1m)'
@@ -23,7 +23,7 @@ jobs:
       - name: Run
         run: |
           sleep 60
-          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://hioppu-obbo.vercel.app/api/cron/process-queue" || true
+          curl -sf -H "Authorization: Bearer MflixProSecret123" "https://hioppu-obbo.vercel.app/api/cron/process-queue" || true
 
   t2:
     name: 'Queue Run (2m)'
@@ -33,7 +33,7 @@ jobs:
       - name: Run
         run: |
           sleep 120
-          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://hioppu-obbo.vercel.app/api/cron/process-queue" || true
+          curl -sf -H "Authorization: Bearer MflixProSecret123" "https://hioppu-obbo.vercel.app/api/cron/process-queue" || true
 
   t3:
     name: 'Queue Run (3m)'
@@ -43,7 +43,7 @@ jobs:
       - name: Run
         run: |
           sleep 180
-          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://hioppu-obbo.vercel.app/api/cron/process-queue" || true
+          curl -sf -H "Authorization: Bearer MflixProSecret123" "https://hioppu-obbo.vercel.app/api/cron/process-queue" || true
 
   t4:
     name: 'Queue Run (4m)'
@@ -53,4 +53,4 @@ jobs:
       - name: Run
         run: |
           sleep 240
-          curl -sf -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "https://hioppu-obbo.vercel.app/api/cron/process-queue" || true
+          curl -sf -H "Authorization: Bearer MflixProSecret123" "https://hioppu-obbo.vercel.app/api/cron/process-queue" || true
