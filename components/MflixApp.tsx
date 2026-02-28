@@ -41,9 +41,11 @@ import {
   WifiOff,
   Shield,
   Activity,
+  Brain,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LinkCard from '@/components/LinkCard';
+import AiControlCenter from '@/components/AiControlCenter';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INTERFACES — Inline defined here. lib/types.ts se import NAHI karna.
@@ -217,6 +219,9 @@ export default function MflixApp() {
 
   // ─── Engine Status State ─────────────────────────────────────────────────
   const [engineStatus, setEngineStatus] = useState<EngineStatus | null>(null);
+
+  // ─── AI Control Center State ────────────────────────────────────────────
+  const [showAiPanel, setShowAiPanel] = useState(false);
 
   // ─────────────────────────────────────────────────────────────────────────
   // REFS
@@ -1377,6 +1382,11 @@ export default function MflixApp() {
 
   const filteredTasks = getFilteredTasks();
 
+  // ─── AI Control Center fullscreen mode ──────────────────────────────────
+  if (showAiPanel) {
+    return <AiControlCenter onBack={() => setShowAiPanel(false)} />;
+  }
+
   return (
     <div className="min-h-screen min-h-dvh bg-black text-white overflow-x-hidden">
 
@@ -1403,14 +1413,25 @@ export default function MflixApp() {
             </div>
           </div>
 
-          {/* Right: Engine status indicator */}
-          <div className="flex items-center gap-2">
-            <PulseDot
+          {/* Right: AI Button + Engine status indicator */}
+          <div className="flex items-center gap-3">
+            {/* AI Control Center Button */}
+            <button
+              onClick={() => setShowAiPanel(true)}
+              className="relative w-8 h-8 rounded-lg bg-violet-600/20 border border-violet-500/30 flex items-center justify-center hover:bg-violet-600/40 active:scale-95 transition-all group"
+            >
+              <Brain className="w-4 h-4 text-violet-400 group-hover:text-violet-300" />
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <PulseDot
               color={isEngineOnline ? 'bg-emerald-400' : 'bg-rose-400'}
             />
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">
               {isEngineOnline ? 'LIVE ENGINE' : 'ENGINE OFFLINE'}
             </span>
+            </div>
           </div>
         </div>
 
