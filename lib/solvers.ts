@@ -420,7 +420,7 @@ export function extractMovieMetadata(html: string): MovieMetadata {
   //   SOURCE 4: Nearest preceding SIBLING heading of the grandparent
   //             — one more level of nesting depth for safety
   //
-  // All four are joined into one wide, searchable context string. Regex word-boundary
+  // All four are joined into one contextLabel string. Regex word-boundary
   // matching correctly finds tokens across join boundaries.
   // ---------------------------------------------------------------------------
   $downloadSection.find('a[href]').each((_i, el) => {
@@ -807,13 +807,14 @@ export async function solveHubCloudNative(url: string): Promise<HubCloudNativeRe
 
 // =============================================================================
 // FUNCTION 8: solveGadgetsWebNative
+// (No changes — logic is correct as-is)
 // =============================================================================
 
 export async function solveGadgetsWebNative(url: string): Promise<GadgetsWebResult> {
   console.log(`[GadgetsWeb] Starting VPS Timer solver: ${url}`);
   try {
     const resp = await axios.get(`${TIMER_API}/solve?url=${encodeURIComponent(url)}`, {
-      timeout: 30000, // UPDATE: Timeout increased from 20000 to 30000 ms to prevent Vercel-VPS connection drops
+      timeout: AXIOS_TIMEOUT_MS,
       headers: { 'User-Agent': 'MflixPro/1.0' },
     });
 
